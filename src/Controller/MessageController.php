@@ -12,8 +12,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 class MessageController extends AbstractController
 {
@@ -23,7 +23,7 @@ class MessageController extends AbstractController
         EntityManagerInterface $em,
         ChannelRepository $channelRepository,
         SerializerInterface $serializer,
-        HubInterface $hub
+        MessageBusInterface $bus
     ): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -56,7 +56,7 @@ class MessageController extends AbstractController
             $jsonMessage,
             true
         );
-        $hub->publish($update);
+        $bus->dispatch($update);
 
         return new JsonResponse( // Enfin, on retourne la réponse
             $jsonMessage,
