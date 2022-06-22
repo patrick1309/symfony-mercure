@@ -3,16 +3,21 @@ version: '3'
 services:
 ###> doctrine/doctrine-bundle ###
   database:
-    image: postgres:${POSTGRES_VERSION:-13}-alpine
+    image: mysql:8.0
+    restart: always
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      # You should definitely change the password in production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeMe}
-      POSTGRES_USER: ${POSTGRES_USER:-symfony}
+      MYSQL_DATABASE: 'symfony-mercure'
+      # Password for root access
+      MYSQL_ROOT_PASSWORD: ''
+    ports:
+      # <Port exposed> : < MySQL Port running inside container>
+      - '3306:3306'
+    expose:
+      # Opens port 3306 on the container
+      - '3306'
+      # Where our data will be persisted
     volumes:
-      - db-data:/var/lib/postgresql/data:rw
-      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
+      - my-db:/var/lib/mysql
 ###< doctrine/doctrine-bundle ###
 
 ###> symfony/mercure-bundle ###
@@ -25,7 +30,7 @@ services:
       MERCURE_SUBSCRIBER_JWT_KEY: '!ChangeMe!'
       # Set the URL of your Symfony project (without trailing slash!) as value of the cors_origins directive
       MERCURE_EXTRA_DIRECTIVES: |
-        cors_origins http://127.0.0.1:8000
+        cors_origins http://127.0.0.1:8000 http://localhost:8000
     # Comment the following line to disable the development mode
     command: /usr/bin/caddy run -config /etc/caddy/Caddyfile.dev
     volumes:
@@ -35,7 +40,7 @@ services:
 
 volumes:
 ###> doctrine/doctrine-bundle ###
-  db-data:
+  my-db:
 ###< doctrine/doctrine-bundle ###
 
 ###> symfony/mercure-bundle ###

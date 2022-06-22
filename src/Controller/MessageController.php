@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Mercure\Update;
 
 class MessageController extends AbstractController
 {
@@ -20,7 +22,8 @@ class MessageController extends AbstractController
         Request $request,
         EntityManagerInterface $em,
         ChannelRepository $channelRepository,
-        SerializerInterface $serializer
+        SerializerInterface $serializer,
+        HubInterface $hub
     ): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -34,6 +37,7 @@ class MessageController extends AbstractController
             throw new AccessDeniedHttpException("No channel with id {$data['channel']}");
         }
 
+        // save message
         $message = (new Message)
             ->setAuthor($this->getUser())
             ->setContent($content)
@@ -41,9 +45,18 @@ class MessageController extends AbstractController
         $em->persist($message);
         $em->flush();
 
+        // serialize
         $jsonMessage = $serializer->serialize($message, 'json', [
             'groups' => ['message'] // On serialize la réponse avant de la renvoyer
         ]);
+
+        // send to mercure hub
+        $update = new Update(
+            sprintf('http://localhost:8000/channel/%s', $channel->getId()),
+            $jsonMessage,
+            true
+        );
+        $hub->publish($update);
 
         return new JsonResponse( // Enfin, on retourne la réponse
             $jsonMessage,
