@@ -32,6 +32,13 @@ class Message
     #[Groups("message")]
     private $channel;
 
+    public function __construct()
+    {
+        if (!$this->createdAt) {
+            $this->createdAt = new \DateTimeImmutable();
+        }
+    }
+
     public function getId(): ?int
     {
         return $this->id;
